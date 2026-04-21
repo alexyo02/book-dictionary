@@ -5,6 +5,7 @@ A simple and elegant app to save words you discover while reading — straight i
 <img width="128" height="128" alt="icon-128" src="https://github.com/user-attachments/assets/eb686e3f-c71f-4b79-8e83-f9d39bc07f41" />
 
 ---
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/alexyo02/book-dictionary)](https://github.com/alexyo02/book-dictionary/releases)
 
 ## ✨ What it does
 
