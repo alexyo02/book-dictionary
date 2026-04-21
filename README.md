@@ -48,5 +48,7 @@ npm start
 ---
 
 ## 📄 License
+Contenuti forniti da Wiktionary (CC BY-SA). 
+https://it.wiktionary.org
 
 GPLv2 © [Alessio Troisi](https://github.com/alexyo02)
