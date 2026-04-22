@@ -1,7 +1,7 @@
 import { useState, useEffect, type FormEvent, type MouseEvent } from 'react';
 import { Search, Loader2, Trash2, Palette, GripVertical, X, Maximize2 } from 'lucide-react';
 import { fetchDefinition, WordDefinition } from './dictionaryService';
-import { motion, AnimatePresence, Reorder } from 'motion/react';
+import { motion, AnimatePresence, Reorder, useDragControls } from 'motion/react';
 
 // Utility to generate a bright random HEX color for dark mode
 const hslToHex = (h: number, s: number, l: number) => {
@@ -83,6 +83,43 @@ interface Favorite extends WordDefinition {
   id: string;
 }
 
+function FavoriteListItem({ fav, onOpenModal, onRemove }: { key?: string; fav: Favorite; onOpenModal: () => void; onRemove: (e: MouseEvent<HTMLButtonElement>) => void }) {
+  const controls = useDragControls();
+
+  return (
+    <Reorder.Item value={fav} dragListener={false} dragControls={controls} className="relative group">
+      <div 
+        style={{ borderLeftColor: fav.color }} 
+        className="p-5 bg-[#27272A] rounded-[24px] border-l-[6px] hover:bg-[#3F3F46] transition-colors flex gap-2 md:gap-3 shadow-sm cursor-pointer items-start"
+        onClick={onOpenModal}
+      >
+        <div 
+          onPointerDown={(e) => { e.stopPropagation(); controls.start(e); }}
+          className="cursor-grab active:cursor-grabbing p-2 -ml-3 md:-ml-2 mt-1 opacity-50 hover:opacity-100 transition-opacity flex items-center justify-center shrink-0 touch-none"
+        >
+          <GripVertical className="w-5 h-5 text-zinc-400" />
+        </div>
+        <div className="flex-grow pr-10">
+          <p className="font-black text-xl capitalize" style={{color: fav.color}}>
+            {fav.word}
+          </p>
+          <p className="text-sm text-zinc-300 line-clamp-2 mt-1 leading-snug">
+            {fav.definition.replace(/\[.*?\]/g, '').replace(/\n/g, ' ').trim()}
+          </p>
+          <button className="mt-2 text-xs font-bold opacity-60 hover:opacity-100" style={{color: fav.color}}>Leggi tutto &rarr;</button>
+        </div>
+      </div>
+      <button 
+        onClick={onRemove}
+        className="absolute top-4 right-4 p-2 bg-[#18181B] hover:bg-black rounded-full opacity-100 xl:opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 text-zinc-400 hover:text-red-400 z-10 shadow-sm"
+        aria-label="Rimuovi preferito"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </Reorder.Item>
+  );
+}
+
 export default function App() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [favSearch, setFavSearch] = useState('');
@@ -98,6 +135,10 @@ export default function App() {
 
   // Dynamic Theme Color
   const [selectedColor, setSelectedColor] = useState('#A78BFA'); // nice starting purple
+
+  // Compact View State
+  const [showAllFavorites, setShowAllFavorites] = useState(false);
+  const MAX_VISIBLE_FAVS = 5;
 
   // Derived filtered favorites
   const filteredFavorites = favorites.filter(f => 
@@ -168,6 +209,17 @@ export default function App() {
   
   const openWordModal = (word: string, definition: string, color: string) => {
     setViewingWord({ word, definition, color });
+  };
+
+  const displayedFavorites = showAllFavorites ? favorites : favorites.slice(0, MAX_VISIBLE_FAVS);
+
+  const handleReorder = (newOrder: Favorite[]) => {
+    if (showAllFavorites) {
+      setFavorites(newOrder);
+    } else {
+      const remaining = favorites.slice(MAX_VISIBLE_FAVS);
+      setFavorites([...newOrder, ...remaining]);
+    }
   };
 
   return (
@@ -277,7 +329,7 @@ export default function App() {
               >
                 <div className="w-full flex justify-between items-start gap-4">
                   <h2 
-                    className="text-5xl lg:text-7xl font-black cnpm install -D @capacitor/assetstalize transition-colors duration-700 theme-text mb-4 break-words"
+                    className="text-5xl lg:text-7xl font-black capitalize transition-colors duration-700 theme-text mb-4 break-words" 
                     style={{fontFamily: "'Roboto', sans-serif"}}
                   >
                     {currentResult.word}
@@ -394,12 +446,12 @@ export default function App() {
                       >
                         <button 
                           onClick={(e) => removeFavorite(fav.id, e)}
-                          className="absolute top-4 right-4 p-2 bg-[#18181B] hover:bg-black rounded-full opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 text-zinc-400 hover:text-white z-10"
+                          className="absolute top-4 right-4 p-2 bg-[#18181B] hover:bg-black rounded-full opacity-100 xl:opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 text-zinc-400 hover:text-red-400 z-10 shadow-sm"
                           aria-label="Rimuovi preferito"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        <p className="font-black text-xl capitalize pr-8" style={{color: fav.color}}>
+                        <p className="font-black text-xl capitalize pr-10" style={{color: fav.color}}>
                           {fav.word}
                         </p>
                         <p className="text-sm text-zinc-300 line-clamp-2 mt-1 leading-snug">
@@ -413,40 +465,29 @@ export default function App() {
               </div>
             ) : (
               // Reorderable Full List
-              <Reorder.Group axis="y" values={favorites} onReorder={setFavorites} className="space-y-4">
-                {favorites.map(fav => (
-                  <Reorder.Item key={fav.id} value={fav} className="relative group">
-                    <div 
-                      style={{ borderLeftColor: fav.color }} 
-                      className="p-5 bg-[#27272A] rounded-[24px] border-l-[6px] hover:bg-[#3F3F46] transition-colors flex gap-3 shadow-sm cursor-pointer"
-                      onClick={() => openWordModal(fav.word, fav.definition, fav.color)}
-                    >
-                      <div 
-                        className="cursor-grab active:cursor-grabbing opacity-20 hover:opacity-100 transition-opacity flex items-center justify-center shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <GripVertical className="w-5 h-5 text-zinc-400" />
-                      </div>
-                      <div className="flex-grow pr-8">
-                        <p className="font-black text-xl capitalize" style={{color: fav.color}}>
-                          {fav.word}
-                        </p>
-                        <p className="text-sm text-zinc-300 line-clamp-2 mt-1 leading-snug">
-                          {fav.definition.replace(/\[.*?\]/g, '').replace(/\n/g, ' ').trim()}
-                        </p>
-                        <button className="mt-2 text-xs font-bold opacity-60 hover:opacity-100" style={{color: fav.color}}>Leggi tutto &rarr;</button>
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                <Reorder.Group axis="y" values={displayedFavorites} onReorder={handleReorder} className="space-y-4">
+                  {displayedFavorites.map(fav => (
+                    <FavoriteListItem 
+                      key={fav.id} 
+                      fav={fav} 
+                      onOpenModal={() => openWordModal(fav.word, fav.definition, fav.color)} 
+                      onRemove={(e) => removeFavorite(fav.id, e)} 
+                    />
+                  ))}
+                </Reorder.Group>
+
+                {favorites.length > MAX_VISIBLE_FAVS && (
+                  <div className="pt-2 pb-4 flex justify-center">
                     <button 
-                      onClick={(e) => removeFavorite(fav.id, e)}
-                      className="absolute top-4 right-4 p-2 bg-[#18181B] hover:bg-black rounded-full opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 text-zinc-400 hover:text-white z-10"
-                      aria-label="Rimuovi preferito"
+                      onClick={() => setShowAllFavorites(!showAllFavorites)} 
+                      className="bg-[#27272A] hover:bg-[#3F3F46] text-zinc-300 hover:text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all border border-white/5 shadow-sm active:scale-95"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {showAllFavorites ? 'Mostra meno salvati' : `Vedi tutti i preferiti (${favorites.length})`}
                     </button>
-                  </Reorder.Item>
-                ))}
-              </Reorder.Group>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
