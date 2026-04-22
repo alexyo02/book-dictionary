@@ -140,9 +140,15 @@ export default function App() {
   const [showAllFavorites, setShowAllFavorites] = useState(false);
   const MAX_VISIBLE_FAVS = 5;
 
+  // Custom Word State
+  const [isAddingCustom, setIsAddingCustom] = useState(false);
+  const [customWord, setCustomWord] = useState('');
+  const [customType, setCustomType] = useState('SOSTANTIVO');
+  const [customDef, setCustomDef] = useState('');
+
   // Derived filtered favorites
-  const filteredFavorites = favorites.filter(f => 
-    f.word.toLowerCase().includes(favSearch.toLowerCase()) || 
+  const filteredFavorites = favorites.filter(f =>
+    f.word.toLowerCase().includes(favSearch.toLowerCase()) ||
     f.definition.toLowerCase().includes(favSearch.toLowerCase())
   );
 
@@ -170,6 +176,7 @@ export default function App() {
     setIsSearching(true);
     setError('');
     setCurrentResult(null);
+    setIsAddingCustom(false);
 
     try {
       const result = await fetchDefinition(searchQuery.trim());
@@ -206,7 +213,7 @@ export default function App() {
     if (e) e.stopPropagation();
     setFavorites(favorites.filter((f) => f.id !== id));
   };
-  
+
   const openWordModal = (word: string, definition: string, color: string) => {
     setViewingWord({ word, definition, color });
   };
@@ -223,7 +230,7 @@ export default function App() {
   };
 
   return (
-    <div 
+    <div
       className="bg-[#09090B] min-h-screen p-4 lg:p-10 font-sans text-white flex flex-col transition-colors duration-700 relative"
       style={{ '--theme': selectedColor } as any}
     >
@@ -232,18 +239,18 @@ export default function App() {
         .theme-text { color: var(--theme); }
         .theme-bg { background-color: var(--theme); color: #09090b; }
       `}</style>
-      
+
       {/* Modal - Expanded Reading View */}
       <AnimatePresence>
         {viewingWord && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:p-10 bg-black/80 backdrop-blur-md"
             onClick={() => setViewingWord(null)}
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
@@ -253,12 +260,12 @@ export default function App() {
             >
               {/* Colored top border accent */}
               <div className="h-2 w-full" style={{ backgroundColor: viewingWord.color }} />
-              
+
               <div className="flex items-center justify-between p-6 lg:p-8 pb-4 shrink-0">
                 <h2 className="text-4xl lg:text-5xl font-black capitalize" style={{ color: viewingWord.color, fontFamily: "'Roboto', sans-serif" }}>
                   {viewingWord.word}
                 </h2>
-                <button 
+                <button
                   onClick={() => setViewingWord(null)}
                   className="bg-white/5 hover:bg-white/10 p-3 rounded-full transition-colors focus:outline-none"
                   aria-label="Chiudi"
@@ -288,9 +295,9 @@ export default function App() {
 
       {/* Main Minimal Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-grow pb-8 relative z-10">
-        
+
         {/* Search & Active Word Section */}
-        <div 
+        <div
           className="xl:col-span-8 bg-[#18181B] rounded-[48px] p-6 lg:p-10 border border-white/5 flex flex-col justify-between min-h-[400px] xl:min-h-[calc(100vh-180px)] relative overflow-hidden transition-all duration-700"
           style={{boxShadow: `0 0 80px -40px ${selectedColor}40`}}
         >
@@ -299,42 +306,122 @@ export default function App() {
 
           <div className="space-y-6 relative z-10 w-full max-w-4xl mx-auto flex-grow flex flex-col">
             <form onSubmit={handleSearch} className="relative w-full">
-              <input 
-                type="text" 
-                placeholder="Cerca una parola..." 
+              <input
+                type="text"
+                placeholder="Cerca una parola..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-16 bg-[#27272A] rounded-2xl px-6 lg:px-8 text-xl font-medium focus:outline-none border-2 border-transparent transition-all shadow-sm text-white placeholder-zinc-500 focus:border-[var(--theme)]" 
+                className="w-full h-16 bg-[#27272A] rounded-2xl px-6 lg:px-8 text-xl font-medium focus:outline-none border-2 border-transparent transition-all shadow-sm text-white placeholder-zinc-500 focus:border-[var(--theme)]"
               />
-              <button 
-                type="submit" 
-                disabled={isSearching || !searchQuery.trim()} 
+              <button
+                type="submit"
+                disabled={isSearching || !searchQuery.trim()}
                 className="absolute right-2 top-1/2 -translate-y-1/2 theme-bg px-4 lg:px-6 h-12 rounded-xl font-bold disabled:opacity-30 disabled:grayscale transition-all flex items-center justify-center hover:brightness-110 active:scale-95"
               >
                 {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Cerca'}
               </button>
             </form>
 
-            {error && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-950/50 text-red-400 font-medium rounded-2xl border border-red-900/50">
-                {error}
+            {error && !isAddingCustom && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-[#27272A] border border-white/10 rounded-3xl flex flex-col items-center text-center gap-4 relative z-10 w-full">
+                <div className="text-zinc-300 font-medium text-lg">{error}</div>
+                <button
+                   onClick={() => {
+                     setIsAddingCustom(true);
+                     setCustomWord(searchQuery);
+                     setCustomDef('');
+                     setCustomType('SOSTANTIVO');
+                   }}
+                   className="text-sm font-bold bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-full transition-colors w-full sm:w-auto"
+                >
+                  Aggiungi parola manuale
+                </button>
               </motion.div>
             )}
-            
+
+            {isAddingCustom && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-2 flex flex-col flex-grow items-start bg-[#27272A]/50 p-6 lg:p-8 rounded-[32px] border border-white/10 relative z-10 w-full mb-4">
+                <div className="w-full flex justify-between items-center mb-6 pb-4 border-b border-white/10">
+                  <h3 className="text-2xl font-bold text-white">Aggiungi Personalizzata</h3>
+                  <button onClick={() => setIsAddingCustom(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors" aria-label="Chiudi form">
+                     <X className="w-5 h-5"/>
+                  </button>
+                </div>
+
+                <div className="w-full space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Parola</label>
+                    <input
+                      type="text"
+                      value={customWord}
+                      onChange={(e) => setCustomWord(e.target.value)}
+                      className="w-full bg-[#18181B] border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--theme)] transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Categoria</label>
+                    <select
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                      className="w-full bg-[#18181B] border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--theme)] transition-colors appearance-none"
+                    >
+                      <option value="SOSTANTIVO">Sostantivo</option>
+                      <option value="AGGETTIVO">Aggettivo</option>
+                      <option value="VERBO">Verbo</option>
+                      <option value="AVVERBIO">Avverbio</option>
+                      <option value="ESPRESSIONE">Espressione</option>
+                      <option value="ARCAICA">Termine Arcaico</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Definizione</label>
+                    <textarea
+                      value={customDef}
+                      onChange={(e) => setCustomDef(e.target.value)}
+                      rows={4}
+                      placeholder="Scrivi qui la tua accezione personalizzata..."
+                      className="w-full bg-[#18181B] border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--theme)] transition-colors resize-none"
+                    ></textarea>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                        if (!customWord.trim() || !customDef.trim()) return;
+                        const finalDefStr = `\n[ ${customType} ]\n${customDef.trim()}\n\n(Definizione aggiunta manualmente)`;
+                        const newFav = {
+                           word: customWord.trim(),
+                           definition: finalDefStr,
+                           color: selectedColor,
+                           id: Date.now().toString()
+                        };
+                        setFavorites(prev => [newFav, ...prev]);
+                        setIsAddingCustom(false);
+                        setSearchQuery('');
+                        setError('');
+                    }}
+                    disabled={!customWord.trim() || !customDef.trim()}
+                    className="w-full theme-bg text-[#09090B] font-bold text-lg py-4 rounded-xl mt-4 disabled:opacity-50 disabled:grayscale transition-all hover:brightness-110 shadow-lg"
+                  >
+                    Salva e aggiungi ai preferiti
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
             {currentResult ? (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-6 flex flex-col flex-grow items-start"
               >
                 <div className="w-full flex justify-between items-start gap-4">
-                  <h2 
-                    className="text-5xl lg:text-7xl font-black capitalize transition-colors duration-700 theme-text mb-4 break-words" 
+                  <h2
+                    className="text-5xl lg:text-7xl font-black capitalize transition-colors duration-700 theme-text mb-4 break-words"
                     style={{fontFamily: "'Roboto', sans-serif"}}
                   >
                     {currentResult.word}
                   </h2>
-                  <button 
+                  <button
                     onClick={() => openWordModal(currentResult.word, currentResult.definition, selectedColor)}
                     className="p-3 bg-[#27272A] hover:bg-[#3F3F46] rounded-full text-zinc-300 hover:text-white transition-colors shrink-0 mt-2 hidden sm:flex"
                     title="Modalità lettura a tutto schermo"
@@ -342,14 +429,14 @@ export default function App() {
                     <Maximize2 className="w-5 h-5" />
                   </button>
                 </div>
-                
+
                 <div className="relative w-full">
                   <div className="text-xl lg:text-2xl leading-relaxed text-zinc-300 max-w-3xl line-clamp-[8] md:line-clamp-[12]">
                     {renderDefinition(currentResult.definition, selectedColor, currentResult.word)}
                   </div>
-                  
+
                   {/* Read more button for long definitions immediately on screen */}
-                  <button 
+                  <button
                     onClick={() => openWordModal(currentResult.word, currentResult.definition, selectedColor)}
                     className="mt-4 inline-flex items-center gap-2 theme-text font-bold hover:underline py-2 sm:hidden"
                   >
@@ -359,8 +446,12 @@ export default function App() {
               </motion.div>
             ) : (
               <div className="flex-grow flex flex-col items-center justify-center text-center opacity-40">
-                 <Search className="w-16 h-16 mb-4 theme-text transition-colors duration-700" />
-                 <p className="text-xl font-medium max-w-sm text-zinc-300">Esplora il dizionario universale.</p>
+                 {!isAddingCustom && (
+                   <>
+                     <Search className="w-16 h-16 mb-4 theme-text transition-colors duration-700" />
+                     <p className="text-xl font-medium max-w-sm text-zinc-300">Esplora il dizionario universale.</p>
+                   </>
+                 )}
               </div>
             )}
           </div>

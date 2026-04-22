@@ -3,6 +3,29 @@ export interface WordDefinition {
   definition: string;
 }
 
+async function fetchWikipediaFallback(word: string): Promise<WordDefinition | null> {
+  try {
+    const url = `https://it.wikipedia.org/w/api.php?action=query&prop=extracts&exsentences=4&titles=${encodeURIComponent(word)}&explaintext=1&format=json&origin=*`;
+    const response = await fetch(url);
+    const data = await response.json();
+    const pages = data.query?.pages;
+    if (!pages) return null;
+    const pageId = Object.keys(pages)[0];
+    if (pageId === "-1") return null;
+    const extract = pages[pageId].extract as string;
+    if (!extract || extract.trim() === '') return null;
+
+    let cleaned = extract.replace(/\n==.*==\n/g, '\n').replace(/\n+/g, '\n').trim();
+
+    return {
+      word: word,
+      definition: `\n[ WIKIPEDIA (ENCICLOPEDIA) ]\n${cleaned}\n\nTermine assente dal dizionario, ma individuato come concetto enciclopedico.`
+    };
+  } catch (err) {
+    return null;
+  }
+}
+
 const SECTION_PRIORITY: Record<string, number> = {
   'sostantivo': 1,
   'verbo': 2,
@@ -27,25 +50,27 @@ interface ParsedSection {
 export async function fetchDefinition(word: string): Promise<WordDefinition | null> {
   try {
     const url = `https://it.wiktionary.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(word.toLowerCase())}&explaintext=1&format=json&origin=*`;
-    
+
     const response = await fetch(url);
     const data = await response.json();
-    
+
     const pages = data.query?.pages;
-    if (!pages) return null;
-    
+    if (!pages) return await fetchWikipediaFallback(word);
+
     const pageId = Object.keys(pages)[0];
-    if (pageId === "-1") return null; // Page not found
-    
+    if (pageId === "-1") {
+       return await fetchWikipediaFallback(word);
+    }
+
     const extract = pages[pageId].extract as string;
-    if (!extract) return null;
+    if (!extract) return await fetchWikipediaFallback(word);
 
     let lines = extract.split('\n');
     let isItalian = false;
     let skipSection = false;
 
     const validSections = Object.keys(SECTION_PRIORITY);
-    
+
     let sections: ParsedSection[] = [];
     let currentSection: ParsedSection | null = null;
     let currentSectionContentLinesCount = 0;
@@ -57,11 +82,11 @@ export async function fetchDefinition(word: string): Promise<WordDefinition | nu
         isItalian = true;
         continue;
       }
-      
+
       if (line.startsWith('== ') && !line.includes('== Italiano ==')) {
-         if (isItalian) break; 
+         if (isItalian) break;
       }
-      
+
       if (!isItalian) continue;
 
       if (line.startsWith('===')) {
@@ -71,7 +96,7 @@ export async function fetchDefinition(word: string): Promise<WordDefinition | nu
 
         let sectionNameRaw = line.replace(/=/g, '').trim().toLowerCase();
         let matchedSection = validSections.find(vs => sectionNameRaw.includes(vs));
-        
+
         if (matchedSection) {
            skipSection = false;
            currentSectionContentLinesCount = 0;
@@ -117,15 +142,20 @@ export async function fetchDefinition(word: string): Promise<WordDefinition | nu
             keepLines.push(...sec.lines);
         }
     }
-    
+
     let finalDefinition = keepLines.join('\n').trim();
-    
+
     if (!finalDefinition) {
+       const fallback = await fetchWikipediaFallback(word);
+       if (fallback) return fallback;
+
        const rawLines = extract.split('\n').filter(l => l.trim() !== '' && !l.startsWith('=='));
        finalDefinition = rawLines.slice(0, 4).join('\n');
     }
 
-    if (!finalDefinition) return null;
+    if (!finalDefinition) {
+       return await fetchWikipediaFallback(word);
+    }
 
     return {
       word: word,
