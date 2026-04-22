@@ -2,9 +2,10 @@
 
 A simple and elegant app to save words you discover while reading — straight into your personal database.
 
-![icon-128.webp](C:\Users\aless\Downloads\bookdictionary\icons\icon-128.webp)
+<img width="128" height="128" alt="icon-128" src="https://github.com/user-attachments/assets/eb686e3f-c71f-4b79-8e83-f9d39bc07f41" />
 
 ---
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/alexyo02/book-dictionary)](https://github.com/alexyo02/book-dictionary/releases)
 
 ## ✨ What it does
 
@@ -20,7 +21,8 @@ All wrapped in a clean, **Material Design** UI.
 
 ## 📱 Screenshots
 
-> ![](C:\Users\aless\AppData\Roaming\marktext\images\2026-04-21-22-44-33-image.png)---
+> <img width="2084" height="1276" alt="2026-04-21-22-44-33-image" src="https://github.com/user-attachments/assets/abb4a8b0-4415-400e-86eb-a069aefefcb6" />
+---
 
 ## 🚀 Getting Started
 
@@ -46,5 +48,7 @@ npm start
 ---
 
 ## 📄 License
+Contenuti forniti da Wiktionary (CC BY-SA). 
+https://it.wiktionary.org
 
-GPLv2 © [Alessio Troisi](https://github.com/alexyo_02)
+GPLv2 © [Alessio Troisi](https://github.com/alexyo02)
