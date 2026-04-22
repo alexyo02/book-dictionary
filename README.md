@@ -51,4 +51,6 @@ npm start
 Contenuti forniti da Wiktionary (CC BY-SA). 
 https://it.wiktionary.org
 
+This app uses data from Wikipedia (https://it.wikipedia.org), licensed under Creative Commons Attribution-ShareAlike (CC BY-SA).
+
 GPLv2 © [Alessio Troisi](https://github.com/alexyo02)
